@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Display a map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="AITOURIR.js"></script> <!-- Assurez-vous que ce fichier existe et est correct -->
+    
+    <!-- Leaflet.draw CSS + JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    
+    <style>
+      #map {position: absolute; top: 0; right: 0; bottom: 0; left: 0;}
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <button onclick="downloadGeoJSON()" style="position: absolute; top: 10px; left: 10px; z-index: 1000;">
+      📥 Télécharger les parcelles dessinées
+    </button>
+
+    <script>
+      // Définir plusieurs fonds de carte
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      });
+
+      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+      });
+
+      const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© CartoDB'
+      });
+
+      // Initialiser la carte avec un fond par défaut
+      const map = L.map('map', {
+        center: [31.597746, -7.844750], // Coordonnées de départ
+        zoom: 13,
+        layers: [osm] // fond de carte par défaut
+      });
+
+      // Ajouter le contrôle pour basculer entre les fonds
+      const baseMaps = {
+        "OpenStreetMap": osm,
+        "Esri Satellite": esriSat,
+        "Carto Light": cartoLight
+      };
+      L.control.layers(baseMaps).addTo(map);
+
+      // Charger le GeoJSON et ajouter le dans MAP: 
+      var geojsonAITOURIR = L.geoJSON(Parcelles, {
+        style: function (feature) {
+          return {
+            color: "green",
+            fillColor: "green",
+            fillOpacity: 0.3
+          };
+        },
+        onEachFeature: function (feature, layer) {
+          let props = feature.properties;
+          let popupContent = "<b>Propriétés des parcelles :</b><br>";
+          for (let key in props) {
+            popupContent += `<b>${key}</b>: ${props[key]}<br>`;
+          }
+          layer.bindPopup(popupContent);
+        }
+      }).addTo(map);
+
+      // Création d’un FeatureGroup pour stocker les objets dessinés
+      const drawnItems = new L.FeatureGroup();
+      map.addLayer(drawnItems);
+
+      // Ajouter les outils de dessin
+      const drawControl = new L.Control.Draw({
+        edit: {
+          featureGroup: drawnItems,
+          remove: true
+        },
+        draw: {
+          polygon: true,
+          polyline: true,
+          rectangle: true,
+          circle: true,
+          marker: true
+        }
+      });
+      map.addControl(drawControl);
+
+      // Écouter les événements de dessin
+      map.on('draw:created', function (e) {
+        const layer = e.layer;
+        drawnItems.addLayer(layer);
+        console.log("Objet dessiné :", layer.toGeoJSON());
+      });
+
+      // Fonction pour télécharger les GeoJSON des parcelles dessinées
+      function downloadGeoJSON() {
+        const data = drawnItems.toGeoJSON();
+        const geojsonStr = JSON.stringify(data);
+        const blob = new Blob([geojsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "parcelles_dessinees.geojson";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+
+    </script>
+  </body>
+</html>
