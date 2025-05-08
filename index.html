@@ -10,7 +10,11 @@
     <!-- Leaflet.draw CSS + JS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css" />
+    <!-- JS -->
+    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
+
     <style>
       #map {position: absolute; top: 0; right: 0; bottom: 0; left: 0;}
     </style>
@@ -111,7 +115,16 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
+      var searchControl = new L.Control.Search({
+    layer: geojsonAITOURIR,  // couche Leaflet (L.geoJSON par exemple)
+    propertyName: 'id',    // nom du champ à rechercher
+    marker: false,
+    moveToLocation: function(latlng, title, map) {
+        map.setView(latlng, 18); // zoom à l’élément trouvé
+    }
+});
 
+map.addControl(searchControl);
 
     </script>
   </body>
